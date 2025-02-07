@@ -1,3 +1,5 @@
+Ill be refactoring this into a proper library over the next few months.
+
 # E-Ink Picture Display in Python
 
 This is a basic Python script for displaying images on a Waveshare 7.3 inch E-Ink display using the `epd7in3f` library. 
