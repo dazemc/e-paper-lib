@@ -216,6 +216,15 @@ class EPD:
                 "Invalid image dimensions: %d x %d, expected %d x %d"
                 % (imwidth, imheight, self.width, self.height)
             )
+            if imwidth < imheight:
+                image_temp = image.resize(
+                    (self.height, self.width), Image.Resampling.LANCZOS
+                )
+                image_temp = image_temp.rotate(90, expand=True)
+            else:
+                image_temp = image.resize(
+                    (self.width, self.height), Image.Resampling.LANCZOS
+                )
 
         # Convert the source image to the 7 colors, dithering if needed
         image_7color = image_temp.convert("RGB").quantize(palette=pal_image)
