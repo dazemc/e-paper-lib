@@ -27,6 +27,7 @@ class EPD:
         self.cs_pin = epdconfig.CS_PIN
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
+        self.ratio = self.height / self.width
         self.BLACK = 0x000000  # 0000  BGR
         self.WHITE = 0xFFFFFF  # 0001
         self.GREEN = 0x00FF00  # 0010
@@ -175,6 +176,16 @@ class EPD:
         self.send_data(0x00)
         return 0
 
+    def crop_image(self, image, width, height):
+        conversion_width = height / (self.height / self.width) // 1
+        width_diff = width - conversion_width
+        cut = width_diff // 2
+        box = (cut, 0, conversion_width, height)
+        print(f"{box=}")
+        cropped_image = image.crop(box)
+        print("cropped image size: ", cropped_image.size)
+        return cropped_image
+
     def getbuffer(self, image):
         # Create a pallette with the 7 colors supported by the panel
         pal_image = Image.new("P", (1, 1))
@@ -207,25 +218,19 @@ class EPD:
 
         # Check if we need to rotate the image
         imwidth, imheight = image.size
+        imratio = imheight / imwidth
+        image_temp = image
         if imwidth == self.width and imheight == self.height:
             image_temp = image
-        elif imwidth == self.height and imheight == self.width:
+        if imwidth <= self.height and imheight >= self.width:
             image_temp = image.rotate(90, expand=True)
-        else:
-            logger.warning(
-                "Invalid image dimensions: %d x %d, expected %d x %d"
-                % (imwidth, imheight, self.width, self.height)
-            )
-            if imwidth < imheight:
-                image_temp = image.resize(
-                    (self.height, self.width), Image.Resampling.LANCZOS
-                )
-                image_temp = image_temp.rotate(90, expand=True)
-            else:
-                image_temp = image.resize(
-                    (self.width, self.height), Image.Resampling.LANCZOS
-                )
-
+        if imratio != self.ratio:
+            print("cropping")
+            image_temp = self.crop_image(image_temp, imwidth, imheight)
+            print("cropped: ", image_temp.size)
+        image_temp = image_temp.resize(
+            (self.width, self.height), Image.Resampling.LANCZOS
+        )
         # Convert the source image to the 7 colors, dithering if needed
         image_7color = image_temp.convert("RGB").quantize(palette=pal_image)
         buf_7color = bytearray(image_7color.tobytes("raw"))
